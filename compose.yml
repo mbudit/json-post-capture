@@ -11,4 +11,7 @@ services:
       DB_PATH: /app/data/captures.db
       CAPTURE_API_KEY: ${CAPTURE_API_KEY:-}
     volumes:
-      - ./data:/app/data
+      - captures-data:/app/data
+
+volumes:
+  captures-data:

@@ -34,12 +34,11 @@ On a server with Docker Compose installed, copy the project to the server
 and run:
 
 ```bash
-mkdir -p data
 docker compose up -d --build
 ```
 
 The service is configured to restart automatically after crashes or server
-reboots. SQLite data is persisted in the project's `data/` directory. View
+reboots. SQLite data is persisted in the Docker volume `captures-data`. View
 the dashboard at `http://<server-ip>:3000` and configure the logger to post to
 `http://<server-ip>:3000/api/capture`.
 
