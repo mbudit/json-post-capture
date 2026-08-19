@@ -1,0 +1,19 @@
+{
+  "name": "json-post-capture",
+  "version": "1.0.0",
+  "description": "Captures JSON POSTs from an automatic weather station data logger",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

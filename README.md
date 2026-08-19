@@ -1,0 +1,86 @@
+# json-post-capture
+
+A small HTTP server that catches JSON POSTs from an automatic weather
+station data logger and stores them for viewing.
+
+## How it works
+
+1. Run this app. It listens for HTTP POST requests on `/api/capture`.
+2. On your data logger, configure the destination URL to point at this
+   machine, e.g. `http://<this-machine-ip>:3000/api/capture`.
+3. Every time the logger POSTs, the raw body is saved to a local SQLite
+   database (`data/captures.db`) along with the timestamp, source IP,
+   and content type.
+4. Open the dashboard in a browser to see captures come in live.
+
+The capture endpoint accepts any body — valid JSON is parsed and
+pretty-printed in the dashboard; anything that isn't valid JSON is still
+stored as raw text so nothing gets lost while you're debugging the
+logger's output format.
+
+## Run it
+
+```bash
+npm install
+npm start
+```
+
+Then open [http://localhost:3000](http://localhost:3000) for the
+dashboard.
+
+By default the server listens on all network interfaces (`0.0.0.0`) so
+devices on your LAN — like the data logger — can reach it. Find this
+machine's LAN IP with:
+
+```bash
+ipconfig
+```
+
+(look for the "IPv4 Address" under your active network adapter).
+
+## Configuring the data logger
+
+Point the logger's HTTP POST destination at:
+
+```
+http://<this-machine-ip>:3000/api/capture
+```
+
+If you run multiple stations and want to tell them apart even when
+their payloads don't include a station name, POST to a per-station path
+instead:
+
+```
+http://<this-machine-ip>:3000/api/capture/<station-name>
+```
+
+If the logger's payload already includes one of these fields, the
+station name is picked up automatically: `station`, `station_name`,
+`station_id`, `logger`, `site`, `name`.
+
+## Configuration (environment variables)
+
+| Variable          | Default        | Purpose                                      |
+|--------------------|----------------|-----------------------------------------------|
+| `PORT`             | `3000`         | Port to listen on                             |
+| `HOST`             | `0.0.0.0`      | Network interface to bind                     |
+| `DB_PATH`          | `data/captures.db` | Path to the SQLite database file         |
+| `CAPTURE_API_KEY`  | (unset)        | If set, requires `x-api-key` header or `?apikey=` on every request |
+
+## API
+
+- `POST /api/capture` — accepts any body, stores it, responds `200 {"status":"ok","id":N}`.
+- `POST /api/capture/:station` — same, tagged with a station name.
+- `GET /api/captures?page=1&limit=100` — list captures (most recent first), with pagination metadata.
+- `GET /api/captures/:id` — full detail of one capture, including headers.
+- `DELETE /api/captures/:id` — delete a capture.
+
+## Notes
+
+- Storage uses Node's built-in `node:sqlite` module — no native build
+  tools required, which matters on Windows.
+- If your data logger and this machine aren't on the same network
+  (e.g. the logger posts over the public internet), you'll need to
+  either port-forward this machine's `PORT` on your router or run this
+  app on a server with a public IP/domain — the app itself doesn't
+  change either way.

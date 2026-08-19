@@ -1,0 +1,5 @@
+(node:32464) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+json-post-capture listening on http://0.0.0.0:3000
+Dashboard:      http://localhost:3000
+Capture URL:    http://<this-machine-ip>:3000/api/capture

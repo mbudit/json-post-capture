@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON POST Capture — Weather Station</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>JSON POST Capture</h1>
+    <p class="endpoint-info">Point your data logger's HTTP POST at:
+      <code id="endpoint-url">…</code>
+    </p>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <label><input type="checkbox" id="auto-refresh" checked> Auto-refresh</label>
+      <button id="refresh-btn">Refresh now</button>
+      <span id="status"></span>
+    </div>
+
+    <div class="pagination" aria-label="Capture pages">
+      <button id="previous-page" type="button">Previous</button>
+      <span id="page-info"></span>
+      <button id="next-page" type="button">Next</button>
+    </div>
+
+    <table id="captures-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Station</th>
+          <th>Source IP</th>
+          <th>Content-Type</th>
+          <th>Valid JSON</th>
+          <th>Size</th>
+          <th>Preview</th>
+        </tr>
+      </thead>
+      <tbody id="captures-body">
+        <tr><td colspan="7" class="empty">No captures yet.</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="modal-close" aria-label="Close">&times;</button>
+      <h2>Capture #<span id="modal-id"></span></h2>
+      <dl id="modal-meta"></dl>
+      <pre id="modal-json"></pre>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
