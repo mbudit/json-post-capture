@@ -28,6 +28,43 @@ npm start
 Then open [http://localhost:3000](http://localhost:3000) for the
 dashboard.
 
+## Deploy with Docker
+
+On a server with Docker Compose installed, copy the project to the server
+and run:
+
+```bash
+mkdir -p data
+docker compose up -d --build
+```
+
+The service is configured to restart automatically after crashes or server
+reboots. SQLite data is persisted in the project's `data/` directory. View
+the dashboard at `http://<server-ip>:3000` and configure the logger to post to
+`http://<server-ip>:3000/api/capture`.
+
+To protect the dashboard and API, set an API key before starting the service:
+
+```bash
+export CAPTURE_API_KEY='replace-with-a-long-random-value'
+docker compose up -d --build
+```
+
+If port 3000 is already in use, choose another host port without changing the
+container port:
+
+```bash
+PORT=8080 docker compose up -d --build
+```
+
+Useful commands:
+
+```bash
+docker compose logs -f
+docker compose ps
+docker compose down
+```
+
 By default the server listens on all network interfaces (`0.0.0.0`) so
 devices on your LAN — like the data logger — can reach it. Find this
 machine's LAN IP with:
