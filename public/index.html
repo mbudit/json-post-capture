@@ -23,32 +23,35 @@
 
     <details class="forward-panel">
       <summary>Forwarding <span id="forward-summary" class="badge">off</span></summary>
-      <p class="hint">Send a copy of every capture on to another HTTP endpoint.
-        Captures are stored and acknowledged first, so an unreachable target
-        never blocks or fails the data logger.</p>
-      <form id="forward-form">
-        <label class="checkbox"><input type="checkbox" id="forward-enabled"> Enable forwarding</label>
-        <div class="fields">
-          <label>Host / IP
-            <input type="text" id="forward-host" placeholder="192.168.1.50" autocomplete="off">
-          </label>
-          <label>Port
-            <input type="number" id="forward-port" min="1" max="65535" placeholder="80">
-          </label>
-          <label>Path
-            <input type="text" id="forward-path" placeholder="/" autocomplete="off">
-          </label>
-          <label>Timeout (ms)
-            <input type="number" id="forward-timeout" min="100" max="60000" placeholder="5000">
-          </label>
-        </div>
-        <div class="actions">
-          <button type="submit">Save</button>
-          <button type="button" id="forward-test">Send test POST</button>
-          <span id="forward-message"></span>
-        </div>
+      <p class="hint">Send a copy of every capture on to one or more HTTP
+        endpoints. Captures are stored and acknowledged first, so a slow or
+        unreachable target never blocks or fails the data logger.</p>
+
+      <table class="forward-table" id="forward-table">
+        <thead>
+          <tr>
+            <th>On</th>
+            <th>Host / IP</th>
+            <th>Port</th>
+            <th>Path</th>
+            <th>Timeout (ms)</th>
+            <th>Last result</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="forward-body">
+          <tr><td colspan="7" class="empty">No forwarding targets yet.</td></tr>
+        </tbody>
+      </table>
+
+      <form id="forward-add-form" class="forward-add">
+        <input type="text" id="new-host" placeholder="Host / IP, e.g. 192.168.1.50" autocomplete="off">
+        <input type="number" id="new-port" placeholder="Port" min="1" max="65535">
+        <input type="text" id="new-path" placeholder="/path" autocomplete="off">
+        <input type="number" id="new-timeout" placeholder="Timeout ms" min="100" max="60000">
+        <button type="submit">Add target</button>
+        <span id="forward-message"></span>
       </form>
-      <p id="forward-last" class="hint"></p>
     </details>
 
     <div class="pagination" aria-label="Capture pages">

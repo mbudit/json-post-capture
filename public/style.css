@@ -80,58 +80,78 @@ main {
   max-width: 46rem;
 }
 
-.forward-panel .checkbox {
-  display: block;
-  margin-bottom: 0.6rem;
-}
-
-.forward-panel .fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+.forward-table {
+  width: 100%;
+  border-collapse: collapse;
   margin-bottom: 0.75rem;
 }
 
-.forward-panel .fields label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.78rem;
-  color: #556;
+.forward-table th,
+.forward-table td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #e7ebee;
+  font-size: 0.82rem;
+  vertical-align: middle;
 }
 
-.forward-panel input[type="text"],
-.forward-panel input[type="number"] {
+.forward-table th {
+  color: #556;
+  font-weight: 600;
+}
+
+.forward-table td.empty {
+  text-align: center;
+  color: #8a97a3;
+}
+
+.forward-table input[type="text"],
+.forward-table input[type="number"] {
+  border: 1px solid #b9c6d2;
+  border-radius: 4px;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+.forward-table td:nth-child(2) input,
+.forward-table td:nth-child(4) input { min-width: 9rem; }
+.forward-table td:nth-child(3) input,
+.forward-table td:nth-child(5) input { min-width: 5rem; }
+
+.row-actions { white-space: nowrap; }
+
+.forward-panel button {
+  background: #163a5f;
+  color: #fff;
+  border: none;
+  padding: 0.35rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.forward-panel button:hover { background: #1f4d7a; }
+
+.forward-panel .row-actions button { margin-right: 0.3rem; }
+.forward-panel .row-test { background: #fff; color: #163a5f; border: 1px solid #b9c6d2; }
+.forward-panel .row-test:hover { background: #eef2f6; }
+.forward-panel .row-delete { background: #a12b2b; }
+.forward-panel .row-delete:hover { background: #c23a3a; }
+
+.forward-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.forward-add input {
   border: 1px solid #b9c6d2;
   border-radius: 4px;
   padding: 0.35rem 0.5rem;
   font-size: 0.85rem;
 }
-
-.forward-panel #forward-host { width: 12rem; }
-.forward-panel #forward-port { width: 6rem; }
-.forward-panel #forward-path { width: 12rem; }
-.forward-panel #forward-timeout { width: 7rem; }
-
-.forward-panel .actions {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.forward-panel .actions button {
-  background: #163a5f;
-  color: #fff;
-  border: none;
-  padding: 0.4rem 0.85rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.82rem;
-}
-
-.forward-panel .actions button:hover { background: #1f4d7a; }
-.forward-panel #forward-test { background: #fff; color: #163a5f; border: 1px solid #b9c6d2; }
-.forward-panel #forward-test:hover { background: #eef2f6; }
 
 .forward-panel .success { color: #1a7a3c; }
 .forward-panel .error { color: #a12b2b; }

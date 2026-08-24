@@ -7,16 +7,14 @@ const previousPageBtn = document.getElementById('previous-page');
 const nextPageBtn = document.getElementById('next-page');
 const pageInfo = document.getElementById('page-info');
 
-const forwardForm = document.getElementById('forward-form');
-const forwardEnabled = document.getElementById('forward-enabled');
-const forwardHost = document.getElementById('forward-host');
-const forwardPort = document.getElementById('forward-port');
-const forwardPath = document.getElementById('forward-path');
-const forwardTimeout = document.getElementById('forward-timeout');
-const forwardTest = document.getElementById('forward-test');
-const forwardMessage = document.getElementById('forward-message');
+const forwardBody = document.getElementById('forward-body');
 const forwardSummary = document.getElementById('forward-summary');
-const forwardLast = document.getElementById('forward-last');
+const forwardAddForm = document.getElementById('forward-add-form');
+const newHost = document.getElementById('new-host');
+const newPort = document.getElementById('new-port');
+const newPath = document.getElementById('new-path');
+const newTimeout = document.getElementById('new-timeout');
+const forwardMessage = document.getElementById('forward-message');
 
 const modal = document.getElementById('modal');
 const modalId = document.getElementById('modal-id');
@@ -129,98 +127,174 @@ function scheduleRefresh() {
   if (autoRefreshEl.checked) {
     refreshTimer = setInterval(() => {
       loadCaptures();
-      loadForward(false);
+      refreshForwardResults();
     }, 5000);
   }
 }
 
 autoRefreshEl.addEventListener('change', scheduleRefresh);
 
-function renderForward({ config, lastResult }) {
-  if (config) {
-    forwardEnabled.checked = config.enabled;
-    forwardHost.value = config.host;
-    forwardPort.value = config.port;
-    forwardPath.value = config.path;
-    forwardTimeout.value = config.timeout_ms;
-
-    const on = config.enabled && config.host;
-    forwardSummary.textContent = on ? `→ ${config.host}:${config.port}${config.path}` : 'off';
-    forwardSummary.className = `badge ${on ? 'ok' : ''}`;
-  }
-
-  if (lastResult) {
-    const outcome = lastResult.ok
-      ? `OK (HTTP ${lastResult.status})`
-      : `failed — ${lastResult.error || `HTTP ${lastResult.status}`}`;
-    forwardLast.textContent = `Last forward at ${fmtTime(lastResult.at)}: ${outcome}`;
-  } else {
-    forwardLast.textContent = 'No forward attempted yet.';
-  }
-}
-
-// withConfig=false leaves the form fields alone so a periodic refresh can't
-// overwrite edits in progress — only the last-attempt line is updated.
-async function loadForward(withConfig = true) {
-  try {
-    const res = await fetch('/api/forward');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    renderForward(withConfig ? data : { lastResult: data.lastResult });
-  } catch (err) {
-    forwardMessage.textContent = `Error: ${err.message}`;
-  }
-}
-
-function formValues() {
-  return {
-    enabled: forwardEnabled.checked,
-    host: forwardHost.value,
-    port: Number(forwardPort.value) || 80,
-    path: forwardPath.value || '/',
-    timeout_ms: Number(forwardTimeout.value) || 5000,
-  };
-}
+let forwardTargets = [];
 
 function setMessage(text, isError) {
   forwardMessage.textContent = text;
   forwardMessage.className = isError ? 'error' : 'success';
 }
 
-forwardForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;');
+}
+
+function lastResultHtml(lastResult) {
+  if (!lastResult) return '<span class="empty">—</span>';
+  const outcome = lastResult.ok
+    ? `OK (${lastResult.status})`
+    : `failed — ${escapeHtml(lastResult.error || `HTTP ${lastResult.status}`)}`;
+  return `<span class="${lastResult.ok ? 'success' : 'error'}">${outcome}</span><br><span class="hint">${fmtTime(lastResult.at)}</span>`;
+}
+
+function renderForwardTable() {
+  const activeCount = forwardTargets.filter((t) => t.enabled).length;
+  forwardSummary.textContent = activeCount ? `${activeCount} active` : 'off';
+  forwardSummary.className = `badge ${activeCount ? 'ok' : ''}`;
+
+  if (!forwardTargets.length) {
+    forwardBody.innerHTML = '<tr><td colspan="7" class="empty">No forwarding targets yet.</td></tr>';
+    return;
+  }
+
+  forwardBody.innerHTML = forwardTargets.map((t) => `
+    <tr data-id="${t.id}">
+      <td><input type="checkbox" class="row-enabled" ${t.enabled ? 'checked' : ''}></td>
+      <td><input type="text" class="row-host" value="${escapeAttr(t.host)}"></td>
+      <td><input type="number" class="row-port" value="${t.port}" min="1" max="65535"></td>
+      <td><input type="text" class="row-path" value="${escapeAttr(t.path)}"></td>
+      <td><input type="number" class="row-timeout" value="${t.timeout_ms}" min="100" max="60000"></td>
+      <td class="row-last">${lastResultHtml(t.lastResult)}</td>
+      <td class="row-actions">
+        <button type="button" class="row-save">Save</button>
+        <button type="button" class="row-test">Test</button>
+        <button type="button" class="row-delete">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+
+  forwardBody.querySelectorAll('tr[data-id]').forEach((tr) => {
+    const id = Number(tr.dataset.id);
+    tr.querySelector('.row-enabled').addEventListener('change', () => saveRow(id, tr));
+    tr.querySelector('.row-save').addEventListener('click', () => saveRow(id, tr));
+    tr.querySelector('.row-test').addEventListener('click', () => testRow(id));
+    tr.querySelector('.row-delete').addEventListener('click', () => deleteRow(id));
+  });
+}
+
+async function loadForward() {
+  try {
+    const res = await fetch('/api/forward/targets');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    forwardTargets = (await res.json()).targets;
+    renderForwardTable();
+  } catch (err) {
+    setMessage(`Error: ${err.message}`, true);
+  }
+}
+
+// Updates only the "Last result" cells, so a periodic refresh can't clobber
+// edits in progress in the row inputs. Ignores targets added/removed
+// elsewhere in the meantime — those show up on the next full loadForward().
+async function refreshForwardResults() {
+  try {
+    const res = await fetch('/api/forward/targets');
+    if (!res.ok) return;
+    const { targets } = await res.json();
+    targets.forEach((t) => {
+      const idx = forwardTargets.findIndex((x) => x.id === t.id);
+      if (idx === -1) return;
+      forwardTargets[idx].lastResult = t.lastResult;
+      const cell = forwardBody.querySelector(`tr[data-id="${t.id}"] .row-last`);
+      if (cell) cell.innerHTML = lastResultHtml(t.lastResult);
+    });
+  } catch (err) {
+    // Silent — the next manual action will surface a real error if the server is down.
+  }
+}
+
+function rowValues(tr) {
+  return {
+    enabled: tr.querySelector('.row-enabled').checked,
+    host: tr.querySelector('.row-host').value,
+    port: Number(tr.querySelector('.row-port').value) || 80,
+    path: tr.querySelector('.row-path').value || '/',
+    timeout_ms: Number(tr.querySelector('.row-timeout').value) || 5000,
+  };
+}
+
+async function saveRow(id, tr) {
   setMessage('Saving…', false);
   try {
-    const res = await fetch('/api/forward', {
+    const res = await fetch(`/api/forward/targets/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formValues()),
+      body: JSON.stringify(rowValues(tr)),
     });
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.error || `HTTP ${res.status}`);
-    renderForward(result);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    forwardTargets[forwardTargets.findIndex((t) => t.id === id)] = data.target;
+    renderForwardTable();
     setMessage('Saved.', false);
   } catch (err) {
     setMessage(err.message, true);
   }
-});
+}
 
-forwardTest.addEventListener('click', async () => {
+async function testRow(id) {
   setMessage('Sending test…', false);
   try {
-    // Save first so the test uses whatever is currently in the form.
-    const saveRes = await fetch('/api/forward', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formValues()),
-    });
-    const saved = await saveRes.json();
-    if (!saveRes.ok) throw new Error(saved.error || `HTTP ${saveRes.status}`);
+    const res = await fetch(`/api/forward/targets/${id}/test`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    const idx = forwardTargets.findIndex((t) => t.id === id);
+    forwardTargets[idx] = { ...forwardTargets[idx], lastResult: data.result };
+    renderForwardTable();
+    setMessage(data.result.ok ? `Test OK (HTTP ${data.result.status})` : 'Test failed', !data.result.ok);
+  } catch (err) {
+    setMessage(err.message, true);
+  }
+}
 
-    const res = await fetch('/api/forward/test', { method: 'POST' });
-    const { result } = await res.json();
-    renderForward({ config: saved.config, lastResult: result });
-    setMessage(result.ok ? `Test OK (HTTP ${result.status})` : `Test failed`, !result.ok);
+async function deleteRow(id) {
+  try {
+    const res = await fetch(`/api/forward/targets/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    forwardTargets = forwardTargets.filter((t) => t.id !== id);
+    renderForwardTable();
+    setMessage('Deleted.', false);
+  } catch (err) {
+    setMessage(err.message, true);
+  }
+}
+
+forwardAddForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  setMessage('Adding…', false);
+  try {
+    const res = await fetch('/api/forward/targets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        host: newHost.value,
+        port: Number(newPort.value) || 80,
+        path: newPath.value || '/',
+        timeout_ms: Number(newTimeout.value) || 5000,
+        enabled: true,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    forwardTargets.push(data.target);
+    renderForwardTable();
+    forwardAddForm.reset();
+    setMessage('Added.', false);
   } catch (err) {
     setMessage(err.message, true);
   }

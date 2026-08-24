@@ -20,12 +20,17 @@ db.exec(`
   )
 `);
 
-// Runtime settings editable from the dashboard, so the forwarding target can
-// change without restarting the container.
+// Forwarding targets editable from the dashboard, so they can be added,
+// changed, or removed without restarting the container.
 db.exec(`
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT
+  CREATE TABLE IF NOT EXISTS forward_targets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    host TEXT NOT NULL,
+    port INTEGER NOT NULL,
+    path TEXT NOT NULL DEFAULT '/',
+    timeout_ms INTEGER NOT NULL DEFAULT 5000,
+    created_at TEXT NOT NULL
   )
 `);
 

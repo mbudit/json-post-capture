@@ -103,29 +103,49 @@ app.delete('/api/captures/:id', checkApiKey, (req, res) => {
   res.json({ deleted: Number(info.changes) });
 });
 
-app.get('/api/forward', checkApiKey, (req, res) => {
-  res.json({ config: forward.getConfig(), lastResult: forward.getLastResult() });
-});
-
-app.put('/api/forward', checkApiKey, (req, res) => {
-  let input;
+function parseJsonBody(req, res) {
   try {
     // express.text() handles every content type, so parse the body ourselves.
-    input = JSON.parse(typeof req.body === 'string' ? req.body : '{}');
+    return JSON.parse(typeof req.body === 'string' ? req.body : '{}');
   } catch (e) {
-    return res.status(400).json({ error: 'body must be JSON' });
+    res.status(400).json({ error: 'body must be JSON' });
+    return null;
   }
+}
 
+app.get('/api/forward/targets', checkApiKey, (req, res) => {
+  res.json({ targets: forward.listTargets() });
+});
+
+app.post('/api/forward/targets', checkApiKey, (req, res) => {
+  const input = parseJsonBody(req, res);
+  if (input === null) return;
   try {
-    const config = forward.saveConfig(input);
-    res.json({ config, lastResult: forward.getLastResult() });
+    res.status(201).json({ target: forward.createTarget(input) });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.post('/api/forward/test', checkApiKey, async (req, res) => {
-  const result = await forward.sendTest();
+app.put('/api/forward/targets/:id', checkApiKey, (req, res) => {
+  const input = parseJsonBody(req, res);
+  if (input === null) return;
+  try {
+    res.json({ target: forward.updateTarget(Number(req.params.id), input) });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/forward/targets/:id', checkApiKey, (req, res) => {
+  const deleted = forward.deleteTarget(Number(req.params.id));
+  if (!deleted) return res.status(404).json({ error: 'not found' });
+  res.json({ deleted: true });
+});
+
+app.post('/api/forward/targets/:id/test', checkApiKey, async (req, res) => {
+  const result = await forward.testTarget(Number(req.params.id));
+  if (!result) return res.status(404).json({ error: 'not found' });
   res.json({ result });
 });
 
