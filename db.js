@@ -20,4 +20,13 @@ db.exec(`
   )
 `);
 
+// Runtime settings editable from the dashboard, so the forwarding target can
+// change without restarting the container.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+  )
+`);
+
 module.exports = db;

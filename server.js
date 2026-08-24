@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const db = require('./db');
+const forward = require('./forward');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -54,7 +55,11 @@ app.post(['/api/capture', '/api/capture/:station'], checkApiKey, (req, res) => {
 
   const info = insertStmt.run(receivedAt, sourceIp, station, contentType, headers, rawBody, isValid);
 
+  // Acknowledge the logger first — forwarding happens after the response so a
+  // slow or unreachable target can never stall or fail the capture.
   res.status(200).json({ status: 'ok', id: Number(info.lastInsertRowid) });
+
+  forward.forwardCapture(rawBody, contentType);
 });
 
 app.get('/api/captures', checkApiKey, (req, res) => {
@@ -96,6 +101,32 @@ app.get('/api/captures/:id', checkApiKey, (req, res) => {
 app.delete('/api/captures/:id', checkApiKey, (req, res) => {
   const info = db.prepare('DELETE FROM captures WHERE id = ?').run(req.params.id);
   res.json({ deleted: Number(info.changes) });
+});
+
+app.get('/api/forward', checkApiKey, (req, res) => {
+  res.json({ config: forward.getConfig(), lastResult: forward.getLastResult() });
+});
+
+app.put('/api/forward', checkApiKey, (req, res) => {
+  let input;
+  try {
+    // express.text() handles every content type, so parse the body ourselves.
+    input = JSON.parse(typeof req.body === 'string' ? req.body : '{}');
+  } catch (e) {
+    return res.status(400).json({ error: 'body must be JSON' });
+  }
+
+  try {
+    const config = forward.saveConfig(input);
+    res.json({ config, lastResult: forward.getLastResult() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/forward/test', checkApiKey, async (req, res) => {
+  const result = await forward.sendTest();
+  res.json({ result });
 });
 
 app.listen(PORT, HOST, () => {

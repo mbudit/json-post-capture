@@ -94,6 +94,30 @@ If the logger's payload already includes one of these fields, the
 station name is picked up automatically: `station`, `station_name`,
 `station_id`, `logger`, `site`, `name`.
 
+## Forwarding (passthrough)
+
+Every capture can be passed through to another HTTP endpoint — useful when a
+second system needs the same data the logger is sending here. Open the
+**Forwarding** panel on the dashboard, set the target host/IP, port and path,
+tick *Enable forwarding*, and press **Save**. **Send test POST** delivers a
+small sample payload so you can confirm the target is reachable before
+switching it on.
+
+The settings are stored in the database, so they survive restarts and can be
+changed at any time without redeploying.
+
+How it behaves:
+
+- The capture is stored and the logger gets its `200` **first**; forwarding
+  happens afterwards. A slow or unreachable target never delays or fails the
+  logger's POST.
+- The body is passed through byte-for-byte with the original `Content-Type`,
+  including bodies that aren't valid JSON.
+- Failed forwards are logged and shown on the dashboard ("Last forward at …"),
+  but are **not** retried. The payload is still in the database, so nothing is
+  lost — it just isn't re-delivered automatically.
+- Plain HTTP only; there's no HTTPS target support.
+
 ## Configuration (environment variables)
 
 | Variable          | Default        | Purpose                                      |
@@ -110,6 +134,9 @@ station name is picked up automatically: `station`, `station_name`,
 - `GET /api/captures?page=1&limit=100` — list captures (most recent first), with pagination metadata.
 - `GET /api/captures/:id` — full detail of one capture, including headers.
 - `DELETE /api/captures/:id` — delete a capture.
+- `GET /api/forward` — current forwarding config plus the last attempt's result.
+- `PUT /api/forward` — update the config, e.g. `{"enabled":true,"host":"192.168.1.50","port":8080,"path":"/ingest","timeout_ms":5000}`.
+- `POST /api/forward/test` — send a test payload to the configured target and return the result.
 
 ## Notes
 

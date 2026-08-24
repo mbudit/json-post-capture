@@ -60,6 +60,89 @@ main {
   color: #667;
 }
 
+.forward-panel {
+  background: #fff;
+  border: 1px solid #e0e6eb;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+.forward-panel summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.forward-panel .hint {
+  color: #667;
+  margin: 0.6rem 0;
+  max-width: 46rem;
+}
+
+.forward-panel .checkbox {
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.forward-panel .fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.forward-panel .fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: #556;
+}
+
+.forward-panel input[type="text"],
+.forward-panel input[type="number"] {
+  border: 1px solid #b9c6d2;
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.forward-panel #forward-host { width: 12rem; }
+.forward-panel #forward-port { width: 6rem; }
+.forward-panel #forward-path { width: 12rem; }
+.forward-panel #forward-timeout { width: 7rem; }
+
+.forward-panel .actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.forward-panel .actions button {
+  background: #163a5f;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.forward-panel .actions button:hover { background: #1f4d7a; }
+.forward-panel #forward-test { background: #fff; color: #163a5f; border: 1px solid #b9c6d2; }
+.forward-panel #forward-test:hover { background: #eef2f6; }
+
+.forward-panel .success { color: #1a7a3c; }
+.forward-panel .error { color: #a12b2b; }
+
+#forward-summary {
+  background: #eef2f6;
+  color: #556;
+  font-weight: 500;
+  margin-left: 0.35rem;
+}
+
 .pagination {
   display: flex;
   align-items: center;

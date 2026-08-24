@@ -21,6 +21,36 @@
       <span id="status"></span>
     </div>
 
+    <details class="forward-panel">
+      <summary>Forwarding <span id="forward-summary" class="badge">off</span></summary>
+      <p class="hint">Send a copy of every capture on to another HTTP endpoint.
+        Captures are stored and acknowledged first, so an unreachable target
+        never blocks or fails the data logger.</p>
+      <form id="forward-form">
+        <label class="checkbox"><input type="checkbox" id="forward-enabled"> Enable forwarding</label>
+        <div class="fields">
+          <label>Host / IP
+            <input type="text" id="forward-host" placeholder="192.168.1.50" autocomplete="off">
+          </label>
+          <label>Port
+            <input type="number" id="forward-port" min="1" max="65535" placeholder="80">
+          </label>
+          <label>Path
+            <input type="text" id="forward-path" placeholder="/" autocomplete="off">
+          </label>
+          <label>Timeout (ms)
+            <input type="number" id="forward-timeout" min="100" max="60000" placeholder="5000">
+          </label>
+        </div>
+        <div class="actions">
+          <button type="submit">Save</button>
+          <button type="button" id="forward-test">Send test POST</button>
+          <span id="forward-message"></span>
+        </div>
+      </form>
+      <p id="forward-last" class="hint"></p>
+    </details>
+
     <div class="pagination" aria-label="Capture pages">
       <button id="previous-page" type="button">Previous</button>
       <span id="page-info"></span>

@@ -7,6 +7,17 @@ const previousPageBtn = document.getElementById('previous-page');
 const nextPageBtn = document.getElementById('next-page');
 const pageInfo = document.getElementById('page-info');
 
+const forwardForm = document.getElementById('forward-form');
+const forwardEnabled = document.getElementById('forward-enabled');
+const forwardHost = document.getElementById('forward-host');
+const forwardPort = document.getElementById('forward-port');
+const forwardPath = document.getElementById('forward-path');
+const forwardTimeout = document.getElementById('forward-timeout');
+const forwardTest = document.getElementById('forward-test');
+const forwardMessage = document.getElementById('forward-message');
+const forwardSummary = document.getElementById('forward-summary');
+const forwardLast = document.getElementById('forward-last');
+
 const modal = document.getElementById('modal');
 const modalId = document.getElementById('modal-id');
 const modalMeta = document.getElementById('modal-meta');
@@ -116,11 +127,105 @@ nextPageBtn.addEventListener('click', () => {
 function scheduleRefresh() {
   if (refreshTimer) clearInterval(refreshTimer);
   if (autoRefreshEl.checked) {
-    refreshTimer = setInterval(loadCaptures, 5000);
+    refreshTimer = setInterval(() => {
+      loadCaptures();
+      loadForward(false);
+    }, 5000);
   }
 }
 
 autoRefreshEl.addEventListener('change', scheduleRefresh);
 
+function renderForward({ config, lastResult }) {
+  if (config) {
+    forwardEnabled.checked = config.enabled;
+    forwardHost.value = config.host;
+    forwardPort.value = config.port;
+    forwardPath.value = config.path;
+    forwardTimeout.value = config.timeout_ms;
+
+    const on = config.enabled && config.host;
+    forwardSummary.textContent = on ? `→ ${config.host}:${config.port}${config.path}` : 'off';
+    forwardSummary.className = `badge ${on ? 'ok' : ''}`;
+  }
+
+  if (lastResult) {
+    const outcome = lastResult.ok
+      ? `OK (HTTP ${lastResult.status})`
+      : `failed — ${lastResult.error || `HTTP ${lastResult.status}`}`;
+    forwardLast.textContent = `Last forward at ${fmtTime(lastResult.at)}: ${outcome}`;
+  } else {
+    forwardLast.textContent = 'No forward attempted yet.';
+  }
+}
+
+// withConfig=false leaves the form fields alone so a periodic refresh can't
+// overwrite edits in progress — only the last-attempt line is updated.
+async function loadForward(withConfig = true) {
+  try {
+    const res = await fetch('/api/forward');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderForward(withConfig ? data : { lastResult: data.lastResult });
+  } catch (err) {
+    forwardMessage.textContent = `Error: ${err.message}`;
+  }
+}
+
+function formValues() {
+  return {
+    enabled: forwardEnabled.checked,
+    host: forwardHost.value,
+    port: Number(forwardPort.value) || 80,
+    path: forwardPath.value || '/',
+    timeout_ms: Number(forwardTimeout.value) || 5000,
+  };
+}
+
+function setMessage(text, isError) {
+  forwardMessage.textContent = text;
+  forwardMessage.className = isError ? 'error' : 'success';
+}
+
+forwardForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  setMessage('Saving…', false);
+  try {
+    const res = await fetch('/api/forward', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formValues()),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || `HTTP ${res.status}`);
+    renderForward(result);
+    setMessage('Saved.', false);
+  } catch (err) {
+    setMessage(err.message, true);
+  }
+});
+
+forwardTest.addEventListener('click', async () => {
+  setMessage('Sending test…', false);
+  try {
+    // Save first so the test uses whatever is currently in the form.
+    const saveRes = await fetch('/api/forward', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formValues()),
+    });
+    const saved = await saveRes.json();
+    if (!saveRes.ok) throw new Error(saved.error || `HTTP ${saveRes.status}`);
+
+    const res = await fetch('/api/forward/test', { method: 'POST' });
+    const { result } = await res.json();
+    renderForward({ config: saved.config, lastResult: result });
+    setMessage(result.ok ? `Test OK (HTTP ${result.status})` : `Test failed`, !result.ok);
+  } catch (err) {
+    setMessage(err.message, true);
+  }
+});
+
 loadCaptures();
+loadForward();
 scheduleRefresh();
